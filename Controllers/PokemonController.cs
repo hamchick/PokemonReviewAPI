@@ -15,15 +15,22 @@ namespace PokemonReviewApp.Controllers
         private readonly IPokemonRepository _pokemonRepository;
         private readonly IMapper _mapper;
         private readonly IOwnerRepository _ownerRepository;
+        private readonly IReviewRepository _reviewRepository;
 
         public PokemonController(IPokemonRepository pokemonRepository, IMapper mapper
-            , IOwnerRepository ownerRepository)
+            , IOwnerRepository ownerRepository, IReviewRepository reviewRepository)
         {
             _pokemonRepository = pokemonRepository;
             _mapper = mapper;
             _ownerRepository = ownerRepository;
+            _reviewRepository = reviewRepository;
         }
 
+        /// <summary>
+        /// 在幹嘛
+        /// </summary>
+        /// <returns>回傳值在幹嘛</returns>
+        /// 回傳代碼
         [HttpGet]
         [ProducesResponseType(200, Type = typeof(IEnumerable<Pokemon>))]
         public IActionResult GetPokemons()
@@ -131,6 +138,36 @@ namespace PokemonReviewApp.Controllers
             {
                 ModelState.AddModelError("", "Something wrong in updating Pokemon");
                 return StatusCode(500, ModelState);
+            }
+
+            return NoContent();
+        }
+
+        [HttpDelete("{pokeId}")]
+        [ProducesResponseType(400)]
+        [ProducesResponseType(204)]
+        [ProducesResponseType(404)]
+        public IActionResult DeletePokemon(int pokeId)
+        {
+            if (!_pokemonRepository.PokemonExists(pokeId))
+            {
+                return NotFound();
+            }
+
+            var reviewsToDelete = _reviewRepository.GetReviewsOfAPokemon(pokeId);
+            var pokemonToDelete = _pokemonRepository.GetPokemon(pokeId);
+
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            if (!_reviewRepository.DeleteReviews(reviewsToDelete.ToList()))
+            {
+                ModelState.AddModelError("", "Something wrong in deleting Reviews of a pokemon");
+            }
+
+            if (!_pokemonRepository.DeletePokemon(pokemonToDelete))
+            {
+                ModelState.AddModelError("", "Something wrong in deleting Pokemon");
             }
 
             return NoContent();
